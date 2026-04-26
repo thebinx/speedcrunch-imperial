@@ -1,5 +1,6 @@
 # Verifies the Linux/CachyOS CMake build path.
-name: Linux Build
+name: CMake Build - Linux
+run-name: Linux CMake build for ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
@@ -10,7 +11,7 @@ on:
 
 jobs:
   linux-release:
-    name: Linux release build
+    name: Linux x64 build artifact
     runs-on: ubuntu-24.04
 
     steps:
