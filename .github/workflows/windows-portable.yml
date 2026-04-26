@@ -32,7 +32,7 @@ jobs:
         run: cmake -S src --preset windows-msvc-release
 
       - name: Build
-        run: cmake --build build/windows-msvc-release --config Release --target speedcrunch --parallel
+        run: cmake --build build/windows-msvc-release --config Release --target speedcrunch-imperial --parallel
 
       - name: Install portable app
         run: cmake --install build/windows-msvc-release --config Release

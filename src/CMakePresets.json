@@ -73,7 +73,7 @@
       "configurePreset": "windows-msvc-release",
       "configuration": "Release",
       "targets": [
-        "speedcrunch"
+        "speedcrunch-imperial"
       ]
     },
     {

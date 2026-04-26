@@ -48,10 +48,16 @@ $InstallDirName = switch ($Preset) {
     default { throw "Unknown Windows preset '$Preset'. Expected windows-msvc-release or windows-msvc-installer." }
 }
 
+$AppTarget = switch ($Preset) {
+    "windows-msvc-release" { "speedcrunch-imperial"; break }
+    "windows-msvc-installer" { "speedcrunch-imperial"; break }
+    default { throw "Unknown Windows preset '$Preset'. Expected windows-msvc-release or windows-msvc-installer." }
+}
+
 $BuildDir = Join-Path $Root "build\$BuildDirName"
 
 cmake -S (Join-Path $Root "src") --preset $Preset
-cmake --build $BuildDir --config Release --target speedcrunch --parallel
+cmake --build $BuildDir --config Release --target $AppTarget --parallel
 cmake --install $BuildDir --config Release
 
 if ($Package) {
