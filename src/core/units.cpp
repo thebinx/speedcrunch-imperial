@@ -780,6 +780,7 @@ struct UnitRegistry {
     QHash<QMap<UnitQuantity, Rational>, Unit> canonicalMatchLookup;
 };
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 11, 0)
 size_t qHash(const QMap<UnitQuantity, Rational>& value, size_t seed = 0) noexcept
 {
     for (auto it = value.constBegin(); it != value.constEnd(); ++it) {
@@ -788,6 +789,7 @@ size_t qHash(const QMap<UnitQuantity, Rational>& value, size_t seed = 0) noexcep
     }
     return seed;
 }
+#endif
 
 // Returns the stable textual key for a base dimension quantity.
 // Used by formatting/parsing fallback paths for unnamed dimensions.

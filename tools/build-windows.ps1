@@ -36,12 +36,26 @@ if (-not $env:CMAKE_PREFIX_PATH -and -not $env:Qt6_DIR) {
     throw "Qt 6 was not found. Set CMAKE_PREFIX_PATH to your Qt MSVC folder, for example C:\Qt\6.6.3\msvc2019_64."
 }
 
-cmake -S (Join-Path $Root "src") --preset $Preset
-cmake --build (Join-Path $Root "build\windows-msvc-release") --config Release --target speedcrunch --parallel
-cmake --install (Join-Path $Root "build\windows-msvc-release") --config Release
-
-if ($Package) {
-    cmake --build (Join-Path $Root "build\windows-msvc-release") --config Release --target package
+$BuildDirName = switch ($Preset) {
+    "windows-msvc-release" { "windows-msvc-release"; break }
+    "windows-msvc-installer" { "windows-msvc-installer"; break }
+    default { throw "Unknown Windows preset '$Preset'. Expected windows-msvc-release or windows-msvc-installer." }
 }
 
-Write-Host "Installed build output to: $Root\dist\windows-msvc"
+$InstallDirName = switch ($Preset) {
+    "windows-msvc-release" { "windows-msvc"; break }
+    "windows-msvc-installer" { "windows-msvc-installer"; break }
+    default { throw "Unknown Windows preset '$Preset'. Expected windows-msvc-release or windows-msvc-installer." }
+}
+
+$BuildDir = Join-Path $Root "build\$BuildDirName"
+
+cmake -S (Join-Path $Root "src") --preset $Preset
+cmake --build $BuildDir --config Release --target speedcrunch --parallel
+cmake --install $BuildDir --config Release
+
+if ($Package) {
+    cmake --build $BuildDir --config Release --target package
+}
+
+Write-Host "Installed build output to: $Root\dist\$InstallDirName"

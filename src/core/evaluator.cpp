@@ -565,8 +565,17 @@ static bool s_hasDegreeMarkerBeforeInSameLiteral(const QString& text, int pos)
         const QChar ch = text.at(i);
         if (isDegreeSign(ch))
             return true;
-        if (ch.isSpace() || ch.isDigit() || ch == MathDsl::DotSep || ch == MathDsl::CommaSep)
+        if (ch.isSpace()
+            || ch.isDigit()
+            || ch == MathDsl::DotSep
+            || ch == MathDsl::CommaSep
+            || ch == MathDsl::ArcminOp
+            || ch == MathDsl::ArcminOpAl1
+            || ch == MathDsl::ArcsecOp
+            || ch == MathDsl::ArcsecOpAl1)
+        {
             continue;
+        }
         return false;
     }
     return false;

@@ -1158,6 +1158,10 @@ Quantity Quantity::operator*(const Quantity& other) const
                        && isExactDimension(*this, dimensionSquareMetre()))))
         {
             result.setDisplayUnit(this->unit() * other.unit(), QString(::unitName(UnitId::Newton)));
+        } else if (n1 == QLatin1String("imperial_length")
+                   && n2 == QLatin1String("imperial_length")) {
+            result.setDisplayUnit(Units::square_foot().numericValue(),
+                                  QString(::unitSymbol(UnitId::SquareFoot)));
         } else if (((this->hasUnit() && Units::isExplicitAngleUnitName(this->unitName())
                      && isPureInverseTimeQuantity(other))
                     || (other.hasUnit() && Units::isExplicitAngleUnitName(other.unitName())
@@ -2018,6 +2022,10 @@ Quantity DMath::sqrt(const Quantity& n)
         result.modifyDimension(name, exp * Rational(1,2));
         ++i;
     }
+    const UnitId displayUnitId = unitId(normalizeUnitName(n.unitName()));
+    if (displayUnitId == UnitId::SquareFoot)
+        result.setDisplayUnit(Units::inch().numericValue(),
+                              QStringLiteral("imperial_length"));
     return result;
 }
 
@@ -2076,6 +2084,13 @@ Quantity DMath::raise(const Quantity& n1, const Quantity& n2)
     while (i != n1.m_dimension.constEnd()) {
         result.modifyDimension(i.key(), i.value()*exponent);
         ++i;
+    }
+    const UnitId displayUnitId = unitId(normalizeUnitName(n1.unitName()));
+    if (displayUnitId == UnitId::Unknown
+        && normalizeUnitName(n1.unitName()) == QLatin1String("imperial_length")
+        && exponent == Rational(2)) {
+        result.setDisplayUnit(Units::square_foot().numericValue(),
+                              QString(::unitSymbol(UnitId::SquareFoot)));
     }
     return result;
 }

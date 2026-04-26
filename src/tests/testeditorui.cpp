@@ -50,6 +50,8 @@ private slots:
     void treats_spaced_question_comment_as_atomic_navigation_and_edit_token();
     void treats_spaced_equal_as_atomic_navigation_and_edit_token();
     void treats_leading_question_comment_as_atomic_navigation_and_edit_token();
+    void backspace_deletes_after_incomplete_imperial_length_expression();
+    void backspace_deletes_after_trailing_operator_symbols();
     void ignores_space_right_after_spaced_unit_conversion_operator();
     void unit_bracket_context_accepts_div_mul_and_rejects_addition();
     void unit_bracket_context_allows_letter_after_middle_dot();
@@ -988,6 +990,59 @@ void TestEditorUi::treats_leading_question_comment_as_atomic_navigation_and_edit
     editor.setCursorPosition(0); // immediately before grouped token
     QTest::keyClick(&editor, Qt::Key_Delete, Qt::NoModifier);
     QCOMPARE(editor.document()->toRawText(), QStringLiteral("2"));
+}
+
+void TestEditorUi::backspace_deletes_after_incomplete_imperial_length_expression()
+{
+    Editor editor;
+    editor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&editor));
+    editor.setFocus();
+
+    editor.setText(QStringLiteral("12'3*"));
+    editor.setCursorPosition(editor.text().size());
+
+    QTest::keyClick(&editor, Qt::Key_Backspace, Qt::NoModifier);
+    QCOMPARE(editor.document()->toRawText(), QStringLiteral("12") + QString(MathDsl::ArcminOp) + QStringLiteral("3"));
+    QCOMPARE(editor.textCursor().position(), 4);
+}
+
+void TestEditorUi::backspace_deletes_after_trailing_operator_symbols()
+{
+    const QVector<QPair<QString, QString>> cases = {
+        {QStringLiteral("6^"), QStringLiteral("6")},
+        {QStringLiteral("6*"), QStringLiteral("6")},
+        {QStringLiteral("6/"), QStringLiteral("6")},
+        {QStringLiteral("6+"), QStringLiteral("6")},
+        {QStringLiteral("6-"), QStringLiteral("6")},
+    };
+
+    for (const auto& testCase : cases) {
+        Editor editor;
+        editor.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&editor));
+        editor.setFocus();
+
+        editor.setText(testCase.first);
+        editor.setCursorPosition(editor.text().size());
+
+        QTest::keyClick(&editor, Qt::Key_Backspace, Qt::NoModifier);
+        QCOMPARE(editor.document()->toRawText(), testCase.second);
+        QCOMPARE(editor.textCursor().position(), testCase.second.size());
+    }
+
+    Editor editor;
+    editor.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&editor));
+    editor.setFocus();
+
+    editor.setText(QStringLiteral("6^"));
+    editor.setCursorPosition(editor.text().size());
+
+    QKeyEvent backspaceByText(QEvent::KeyPress, Qt::Key_unknown, Qt::NoModifier, QString(QChar(0x0008)));
+    QApplication::sendEvent(&editor, &backspaceByText);
+    QCOMPARE(editor.document()->toRawText(), QStringLiteral("6"));
+    QCOMPARE(editor.textCursor().position(), 1);
 }
 
 void TestEditorUi::ignores_space_right_after_spaced_unit_conversion_operator()

@@ -2474,6 +2474,50 @@ void Editor::inputMethodEvent(QInputMethodEvent* event)
 void Editor::keyPressEvent(QKeyEvent* event)
 {
     int key = event->key();
+    const bool isBackspaceKey =
+        key == Qt::Key_Backspace
+        || event->text() == QString(QChar(0x0008));
+    const bool isDeleteKey =
+        key == Qt::Key_Delete
+        || event->text() == QString(QChar(0x007f));
+
+    if (isBackspaceKey) {
+        if (event->matches(QKeySequence::DeleteStartOfWord)) {
+            // Preserve word-delete shortcuts (platform-dependent Alt/Ctrl+BS),
+            // but still treat grouped spaced operators as a single unit.
+            if (!textCursor().hasSelection()
+                && isAfterGroupedSpacedOperator(text(), textCursor().position())) {
+                doBackspace();
+                event->accept();
+                return;
+            }
+            QPlainTextEdit::keyPressEvent(event);
+            event->accept();
+            return;
+        }
+        doBackspace();
+        event->accept();
+        return;
+    }
+    if (isDeleteKey) {
+        if (event->matches(QKeySequence::DeleteEndOfWord)) {
+            // Preserve word-delete shortcuts (platform-dependent Alt/Ctrl+Del),
+            // but still treat grouped spaced operators as a single unit.
+            if (!textCursor().hasSelection()
+                && isBeforeGroupedSpacedOperator(text(), textCursor().position())) {
+                doDelete();
+                event->accept();
+                return;
+            }
+            QPlainTextEdit::keyPressEvent(event);
+            event->accept();
+            return;
+        }
+        doDelete();
+        event->accept();
+        return;
+    }
+
     const int cursorPosition = textCursor().position();
     const bool squareBracketContext = isInsideUnmatchedSquareBracketContext(
         text(),
@@ -2890,6 +2934,8 @@ void Editor::keyPressEvent(QKeyEvent* event)
     const QChar typedForRules = normalizedTypedCharFromEvent(event, normalizedEventText);
     if (key != Qt::Key_Enter
         && key != Qt::Key_Return
+        && key != Qt::Key_Backspace
+        && key != Qt::Key_Delete
         && !(event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
         && !textCursor().hasSelection()
         && !typedForRules.isNull()) {
@@ -3225,37 +3271,9 @@ void Editor::keyPressEvent(QKeyEvent* event)
         return;
 
     case Qt::Key_Backspace:
-        if (event->matches(QKeySequence::DeleteStartOfWord)) {
-            // Preserve word-delete shortcuts (platform-dependent Alt/Ctrl+BS),
-            // but still treat grouped spaced operators as a single unit.
-            if (!textCursor().hasSelection()
-                && isAfterGroupedSpacedOperator(text(), textCursor().position())) {
-                doBackspace();
-                event->accept();
-                return;
-            }
-            QPlainTextEdit::keyPressEvent(event);
-            event->accept();
-            return;
-        }
-        doBackspace();
         event->accept();
         return;
     case Qt::Key_Delete:
-        if (event->matches(QKeySequence::DeleteEndOfWord)) {
-            // Preserve word-delete shortcuts (platform-dependent Alt/Ctrl+Del),
-            // but still treat grouped spaced operators as a single unit.
-            if (!textCursor().hasSelection()
-                && isBeforeGroupedSpacedOperator(text(), textCursor().position())) {
-                doDelete();
-                event->accept();
-                return;
-            }
-            QPlainTextEdit::keyPressEvent(event);
-            event->accept();
-            return;
-        }
-        doDelete();
         event->accept();
         return;
 

@@ -2,10 +2,11 @@ if(APPLE)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install")
 endif()
 
-set(CPACK_PACKAGE_VENDOR SpeedCrunch)
+set(CPACK_PACKAGE_NAME "SpeedCrunch Imperial")
+set(CPACK_PACKAGE_VENDOR "SpeedCrunch Imperial")
 set(CPACK_PACKAGE_VERSION ${speedcrunch_VERSION})
-set(CPACK_PACKAGE_INSTALL_DIRECTORY SpeedCrunch)
-set(CPACK_PACKAGE_EXECUTABLES ${APPLICATION_NAME} SpeedCrunch)
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "SpeedCrunch Imperial")
+set(CPACK_PACKAGE_EXECUTABLES ${APPLICATION_NAME} "SpeedCrunch Imperial")
 
 if(WIN32)
     if(NOT CPACK_GENERATOR)
@@ -20,27 +21,29 @@ if(WIN32)
     set(CPACK_NSIS_EXECUTABLES_DIRECTORY ${BIN_INSTALL_DIR})
     set(CPACK_NSIS_INSTALLED_ICON_NAME "${BIN_INSTALL_DIR}\\\\${APPLICATION_NAME}.exe,0")
     set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}\\\\resources\\\\speedcrunch.ico")
-    set(CPACK_NSIS_HELP_LINK "http://groups.google.com/group/speedcrunch")
-    set(CPACK_NSIS_URL_INFO_ABOUT "http://speedcrunch.org")
+    set(CPACK_NSIS_DISPLAY_NAME "SpeedCrunch Imperial")
+    set(CPACK_NSIS_PACKAGE_NAME "SpeedCrunch Imperial")
+    set(CPACK_NSIS_HELP_LINK "https://github.com/thebinx/speedcrunch-imperial")
+    set(CPACK_NSIS_URL_INFO_ABOUT "https://github.com/thebinx/speedcrunch-imperial")
     set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL true)
 
     set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS
-        "WriteRegStr SHCTX 'Software\\\\RegisteredApplications' 'SpeedCrunch' 'Software\\\\SpeedCrunch\\\\Capabilities'
-         WriteRegStr SHCTX 'Software\\\\SpeedCrunch\\\\Capabilities' 'ApplicationDescription' 'SpeedCrunch is a high-precision scientific calculator'
-         WriteRegStr SHCTX 'Software\\\\SpeedCrunch\\\\Capabilities' 'ApplicationName' 'SpeedCrunch'
-         WriteRegStr SHCTX 'Software\\\\SpeedCrunch\\\\Capabilities\\\\UrlAssociations' 'calculator' 'SpeedCrunch.Url.calculator'
+        "WriteRegStr SHCTX 'Software\\\\RegisteredApplications' 'SpeedCrunch Imperial' 'Software\\\\SpeedCrunchImperial\\\\Capabilities'
+         WriteRegStr SHCTX 'Software\\\\SpeedCrunchImperial\\\\Capabilities' 'ApplicationDescription' 'SpeedCrunch Imperial is a high-precision scientific calculator with imperial length support'
+         WriteRegStr SHCTX 'Software\\\\SpeedCrunchImperial\\\\Capabilities' 'ApplicationName' 'SpeedCrunch Imperial'
+         WriteRegStr SHCTX 'Software\\\\SpeedCrunchImperial\\\\Capabilities\\\\UrlAssociations' 'calculator' 'SpeedCrunchImperial.Url.calculator'
 
-         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunch.Url.calculator' '' 'SpeedCrunch'
-         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunch.Url.calculator' 'FriendlyTypeName' 'SpeedCrunch'
-         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunch.Url.calculator\\\\shell\\\\open\\\\command' '' '\\\"$INSTDIR\\\\${BIN_INSTALL_DIR}\\\\${APPLICATION_NAME}.exe\\\"'
-         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunch.Url.calculator\\\\Application' 'ApplicationCompany' 'SpeedCrunch'
+         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunchImperial.Url.calculator' '' 'SpeedCrunch Imperial'
+         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunchImperial.Url.calculator' 'FriendlyTypeName' 'SpeedCrunch Imperial'
+         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunchImperial.Url.calculator\\\\shell\\\\open\\\\command' '' '\\\"$INSTDIR\\\\${BIN_INSTALL_DIR}\\\\${APPLICATION_NAME}.exe\\\"'
+         WriteRegStr SHCTX 'Software\\\\Classes\\\\SpeedCrunchImperial.Url.calculator\\\\Application' 'ApplicationCompany' 'SpeedCrunch Imperial'
 
-         WriteRegStr SHCTX 'Software\\\\Classes\\\\Applications\\\\${APPLICATION_NAME}.exe' 'FriendlyAppName' 'SpeedCrunch'
+         WriteRegStr SHCTX 'Software\\\\Classes\\\\Applications\\\\${APPLICATION_NAME}.exe' 'FriendlyAppName' 'SpeedCrunch Imperial'
          ")
     set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
-        "DeleteRegValue SHCTX 'Software\\\\RegisteredApplications' 'SpeedCrunch'
-         DeleteRegKey SHCTX 'Software\\\\SpeedCrunch'
-         DeleteRegKey SHCTX 'Software\\\\Classes\\\\SpeedCrunch.Url.calculator'
+        "DeleteRegValue SHCTX 'Software\\\\RegisteredApplications' 'SpeedCrunch Imperial'
+         DeleteRegKey SHCTX 'Software\\\\SpeedCrunchImperial'
+         DeleteRegKey SHCTX 'Software\\\\Classes\\\\SpeedCrunchImperial.Url.calculator'
          DeleteRegKey SHCTX 'Software\\\\Classes\\\\Applications\\\\${APPLICATION_NAME}.exe'
          ")
 

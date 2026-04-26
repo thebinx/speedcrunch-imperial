@@ -1,11 +1,11 @@
-# Builds the public downloadable Windows ZIP.
-name: Windows Portable Build
+# Builds public downloadable Windows packages.
+name: Windows Builds
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - master
+      - main
     tags:
       - "v*"
 
@@ -44,14 +44,64 @@ jobs:
           if (Test-Path $zip) { Remove-Item $zip }
           Compress-Archive -Path "dist/windows-msvc/*" -DestinationPath $zip
 
-      - name: Upload build artifact
+      - name: Upload portable artifact
         uses: actions/upload-artifact@v4
         with:
           name: SpeedCrunch-Imperial-Windows-x64
           path: SpeedCrunch-Imperial-Windows-x64.zip
 
-      - name: Attach ZIP to tagged release
+      - name: Attach portable ZIP to tagged release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: SpeedCrunch-Imperial-Windows-x64.zip
+
+  windows-installer:
+    name: Windows x64 NSIS installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.6.3"
+          arch: "win64_msvc2019_64"
+          cache: true
+
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          choco install nsis -y --no-progress
+          "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Configure
+        run: cmake -S src --preset windows-msvc-installer
+
+      - name: Build installer
+        run: cmake --build build/windows-msvc-installer --config Release --target package --parallel
+
+      - name: Normalize installer filename
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem build/windows-msvc-installer -Filter "*.exe" |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+          if (-not $installer) {
+            throw "No installer .exe was produced by CPack."
+          }
+          Copy-Item $installer.FullName "SpeedCrunch-Imperial-Windows-x64-Setup.exe"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeedCrunch-Imperial-Windows-x64-Installer
+          path: SpeedCrunch-Imperial-Windows-x64-Setup.exe
+
+      - name: Attach installer to tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SpeedCrunch-Imperial-Windows-x64-Setup.exe

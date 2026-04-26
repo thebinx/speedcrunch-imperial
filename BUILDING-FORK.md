@@ -1,10 +1,14 @@
-# Building SpeedCrunch Imperial Fork
+# Building SpeedCrunch Imperial
 
 This fork uses CMake and Qt 6. The checked-in presets keep Linux/CachyOS and Windows builds using the same source tree and install layout.
 
 ## GitHub Actions Builds
 
-The repository includes `.github/workflows/windows-portable.yml`. On every push to `master`, GitHub builds a Windows x64 portable ZIP and publishes it as a workflow artifact.
+The repository includes GitHub Actions for Linux and Windows. On every push to `main`, GitHub builds:
+
+- a Linux x64 install tree
+- a Windows x64 portable ZIP
+- a Windows x64 NSIS installer
 
 To create a public downloadable release, push a version tag:
 
@@ -13,7 +17,7 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The workflow attaches `SpeedCrunch-Imperial-Windows-x64.zip` to that GitHub Release.
+The Windows workflow attaches the ZIP and installer to that GitHub Release.
 
 ## CachyOS / Arch Linux
 
@@ -69,4 +73,10 @@ Create a portable ZIP package:
 powershell -ExecutionPolicy Bypass -File .\tools\build-windows.ps1 -Package
 ```
 
-The Windows preset uses `PORTABLE_SPEEDCRUNCH=ON` and `CPACK_GENERATOR=ZIP`, so it does not require NSIS. If you want an installer later, install NSIS and configure with `CPACK_GENERATOR=NSIS`.
+Create an NSIS installer:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\build-windows.ps1 -Preset windows-msvc-installer -Package
+```
+
+The portable preset uses `PORTABLE_SPEEDCRUNCH=ON` and `CPACK_GENERATOR=ZIP`. The installer preset uses `PORTABLE_SPEEDCRUNCH=OFF` and `CPACK_GENERATOR=NSIS`, so it requires NSIS on the build machine. The GitHub Actions workflow installs NSIS automatically.

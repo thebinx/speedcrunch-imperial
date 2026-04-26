@@ -1367,6 +1367,17 @@ void test_imperial_length_literals()
     CHECK_EVAL_FORMAT("32'-1 3/4\"", "32'-1 3/4\"");
     CHECK_EVAL_FORMAT("32'-0.75\"", "32'-3/4\"");
     CHECK_EVAL_FORMAT("32'0.875\"", "32'-7/8\"");
+    CHECK_EVAL_FORMAT("12'3*12'3", u8"150.0625[ft²]");
+    CHECK_EVAL_FORMAT("12'3/3'", "4.08333333333333333333");
+    CHECK_EVAL_FORMAT("12'3*3", "36'-9\"");
+    CHECK_EVAL_FORMAT("(12'3 + 3')/3", "5'-1\"");
+    CHECK_EVAL_FORMAT("sqrt(12'3*12'3)", "12'-3\"");
+    CHECK_EVAL_FORMAT("(12'3)^2", u8"150.0625[ft²]");
+    CHECK_EVAL_FORMAT("abs(-12'3)", "12'-3\"");
+    CHECK_EVAL_FORMAT("min(12'3; 3')", "3'-0\"");
+    CHECK_EVAL_FORMAT("max(12'3; 3')", "12'-3\"");
+    CHECK_EVAL_FORMAT("sin(30°) * 12'3", "6'-1 1/2\"");
+    CHECK_EVAL_FORMAT("12'3 -> [ft]", "12.25[ft]");
 }
 
 void test_material_density_variables()
