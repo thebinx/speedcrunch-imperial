@@ -1,3 +1,4 @@
+# Builds the public downloadable Windows ZIP.
 name: Windows Portable Build
 
 on:

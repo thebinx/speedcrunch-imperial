@@ -1,3 +1,4 @@
+# Verifies the Linux/CachyOS CMake build path.
 name: Linux Build
 
 on:
