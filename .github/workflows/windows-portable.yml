@@ -1,0 +1,57 @@
+name: Windows Portable Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    name: Windows x64 portable ZIP
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.6.3"
+          arch: "win64_msvc2019_64"
+          modules: "qttools"
+          cache: true
+
+      - name: Configure
+        run: cmake -S src --preset windows-msvc-release
+
+      - name: Build
+        run: cmake --build build/windows-msvc-release --config Release --target speedcrunch --parallel
+
+      - name: Install portable app
+        run: cmake --install build/windows-msvc-release --config Release
+
+      - name: Create portable ZIP
+        shell: pwsh
+        run: |
+          $zip = "SpeedCrunch-Imperial-Windows-x64.zip"
+          if (Test-Path $zip) { Remove-Item $zip }
+          Compress-Archive -Path "dist/windows-msvc/*" -DestinationPath $zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeedCrunch-Imperial-Windows-x64
+          path: SpeedCrunch-Imperial-Windows-x64.zip
+
+      - name: Attach ZIP to tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SpeedCrunch-Imperial-Windows-x64.zip

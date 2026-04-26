@@ -18,10 +18,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
-find_package(Qt6 COMPONENTS Core Widgets Help Network Test QUIET)
-if(Qt6_FOUND)
-    message(STATUS "Found Qt version: ${Qt6_VERSION}")
-endif()
+find_package(Qt6 6.2 REQUIRED COMPONENTS Core Widgets Help Network Test)
+message(STATUS "Found Qt version: ${Qt6_VERSION}")
 
 if (MSVC)
     add_definitions(-D_USE_MATH_DEFINES)
@@ -102,7 +100,7 @@ else()
     add_executable(${APPLICATION_NAME} ${speedcrunch_SOURCES} ${speedcrunch_RESOURCES})
 endif()
 
-set_property(TARGET ${APPLICATION_NAME} PROPERTY CXX_STANDARD 11)
+set_property(TARGET ${APPLICATION_NAME} PROPERTY CXX_STANDARD 17)
 
 target_compile_definitions(${APPLICATION_NAME}
     PRIVATE

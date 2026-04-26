@@ -479,6 +479,241 @@ static bool isDegreeSign(const QChar& ch)
            || ch == UnicodeChars::RingOperator; // ∘ RING OPERATOR
 }
 
+static int s_skipSpaces(const QString& text, int pos)
+{
+    while (pos < text.size() && text.at(pos).isSpace())
+        ++pos;
+    return pos;
+}
+
+static bool s_scanSimpleDecimal(const QString& text, int* pos, QString* number)
+{
+    const int start = *pos;
+    bool hasDigit = false;
+    bool hasRadix = false;
+    while (*pos < text.size()) {
+        const QChar ch = text.at(*pos);
+        if (ch.isDigit()) {
+            hasDigit = true;
+            ++(*pos);
+        } else if ((ch == MathDsl::DotSep || ch == MathDsl::CommaSep) && !hasRadix) {
+            hasRadix = true;
+            ++(*pos);
+        } else {
+            break;
+        }
+    }
+    if (!hasDigit)
+        return false;
+    *number = Evaluator::fixNumberRadix(text.mid(start, *pos - start));
+    return !number->isNull();
+}
+
+static bool s_scanImperialInchPart(const QString& text, int* pos, double* inches)
+{
+    int p = s_skipSpaces(text, *pos);
+    if (p < text.size() && (text.at(p) == MathDsl::SubOp || text.at(p) == MathDsl::SubOpAl1))
+        p = s_skipSpaces(text, p + 1);
+
+    QString whole;
+    const int wholeStart = p;
+    const bool hasWhole = s_scanSimpleDecimal(text, &p, &whole);
+    p = s_skipSpaces(text, p);
+
+    QString numerator;
+    QString denominator;
+    int fractionPos = p;
+    const bool hasNumerator = s_scanSimpleDecimal(text, &fractionPos, &numerator);
+    if (hasNumerator) {
+        fractionPos = s_skipSpaces(text, fractionPos);
+        if (fractionPos < text.size() && text.at(fractionPos) == MathDsl::DivOp) {
+            int denominatorPos = s_skipSpaces(text, fractionPos + 1);
+            if (s_scanSimpleDecimal(text, &denominatorPos, &denominator)) {
+                p = denominatorPos;
+            }
+        }
+    }
+
+    bool okWhole = false;
+    bool okNumerator = false;
+    bool okDenominator = false;
+    double result = 0.0;
+    if (hasWhole)
+        result = whole.toDouble(&okWhole);
+    if (!numerator.isEmpty() && !denominator.isEmpty()) {
+        const double n = numerator.toDouble(&okNumerator);
+        const double d = denominator.toDouble(&okDenominator);
+        if (!okNumerator || !okDenominator || d == 0.0)
+            return false;
+        result += n / d;
+    }
+
+    if (!hasWhole && numerator.isEmpty()) {
+        *pos = wholeStart;
+        return false;
+    }
+    if (hasWhole && !okWhole)
+        return false;
+    *pos = p;
+    *inches = result;
+    return true;
+}
+
+static bool s_hasDegreeMarkerBeforeInSameLiteral(const QString& text, int pos)
+{
+    for (int i = pos - 1; i >= 0; --i) {
+        const QChar ch = text.at(i);
+        if (isDegreeSign(ch))
+            return true;
+        if (ch.isSpace() || ch.isDigit() || ch == MathDsl::DotSep || ch == MathDsl::CommaSep)
+            continue;
+        return false;
+    }
+    return false;
+}
+
+static bool s_tryRewriteImperialLiteral(const QString& text, int start,
+                                        int* end, QString* replacement)
+{
+    if (s_hasDegreeMarkerBeforeInSameLiteral(text, start))
+        return false;
+
+    int p = start;
+    QString firstNumber;
+    if (!s_scanSimpleDecimal(text, &p, &firstNumber))
+        return false;
+    bool okFirst = false;
+    const double firstValue = firstNumber.toDouble(&okFirst);
+    if (!okFirst)
+        return false;
+
+    p = s_skipSpaces(text, p);
+    if (p >= text.size())
+        return false;
+
+    if (text.at(p) == QLatin1Char('\'') || text.at(p) == MathDsl::ArcminOp
+        || text.at(p) == MathDsl::ArcminOpAl1) {
+        ++p;
+        double inches = 0.0;
+        int inchStart = p;
+        double parsedInches = 0.0;
+        if (s_scanImperialInchPart(text, &p, &parsedInches)) {
+            int q = s_skipSpaces(text, p);
+            if (q < text.size() && (text.at(q) == QLatin1Char('"')
+                                    || text.at(q) == MathDsl::ArcsecOp
+                                    || text.at(q) == MathDsl::ArcsecOpAl1)) {
+                p = q + 1;
+                inches = parsedInches;
+            } else if (p > inchStart) {
+                inches = parsedInches;
+            }
+        }
+
+        *end = p;
+        *replacement = QStringLiteral("(%1[imperial_length])")
+            .arg(QString::number(firstValue * 12.0 + inches, 'g', 16));
+        return true;
+    }
+
+    if (text.at(p) == QLatin1Char('"') || text.at(p) == MathDsl::ArcsecOp
+        || text.at(p) == MathDsl::ArcsecOpAl1) {
+        *end = p + 1;
+        *replacement = QStringLiteral("(%1[imperial_length])")
+            .arg(QString::number(firstValue, 'g', 16));
+        return true;
+    }
+
+    return false;
+}
+
+static bool s_isAdditiveBoundaryBefore(const QString& text, int pos)
+{
+    int p = pos - 1;
+    while (p >= 0 && text.at(p).isSpace())
+        --p;
+    if (p < 0)
+        return true;
+    const QChar ch = text.at(p);
+    return ch == MathDsl::AddOp
+           || ch == MathDsl::SubOp
+           || ch == MathDsl::SubOpAl1
+           || ch == MathDsl::GroupStart;
+}
+
+static bool s_isAdditiveBoundaryAfter(const QString& text, int pos)
+{
+    int p = pos;
+    while (p < text.size() && text.at(p).isSpace())
+        ++p;
+    if (p >= text.size())
+        return true;
+    const QChar ch = text.at(p);
+    return ch == MathDsl::AddOp
+           || ch == MathDsl::SubOp
+           || ch == MathDsl::SubOpAl1
+           || ch == MathDsl::GroupEnd
+           || ch == MathDsl::CommentSep;
+}
+
+static QString s_rewriteImperialLengthInput(const QString& expr)
+{
+    if (Settings::instance()->resultFormat == 's')
+        return expr;
+
+    QString rewritten;
+    bool sawImperialLiteral = false;
+    int bracketDepth = 0;
+    int i = 0;
+    while (i < expr.size()) {
+        const QChar ch = expr.at(i);
+        if (ch == MathDsl::UnitStart)
+            ++bracketDepth;
+        else if (ch == MathDsl::UnitEnd && bracketDepth > 0)
+            --bracketDepth;
+
+        if (bracketDepth == 0 && ch.isDigit()) {
+            int end = i;
+            QString replacement;
+            if (s_tryRewriteImperialLiteral(expr, i, &end, &replacement)) {
+                rewritten += replacement;
+                i = end;
+                sawImperialLiteral = true;
+                continue;
+            }
+        }
+        rewritten += ch;
+        ++i;
+    }
+
+    if (!sawImperialLiteral)
+        return expr;
+
+    QString withBareInches;
+    bracketDepth = 0;
+    i = 0;
+    while (i < rewritten.size()) {
+        const QChar ch = rewritten.at(i);
+        if (ch == MathDsl::UnitStart)
+            ++bracketDepth;
+        else if (ch == MathDsl::UnitEnd && bracketDepth > 0)
+            --bracketDepth;
+
+        if (bracketDepth == 0 && ch.isDigit() && s_isAdditiveBoundaryBefore(rewritten, i)) {
+            int p = i;
+            QString number;
+            if (s_scanSimpleDecimal(rewritten, &p, &number)
+                && s_isAdditiveBoundaryAfter(rewritten, p)) {
+                withBareInches += QStringLiteral("(%1[imperial_length])").arg(number);
+                i = p;
+                continue;
+            }
+        }
+        withBareInches += ch;
+        ++i;
+    }
+    return withBareInches;
+}
+
 bool isExponent(const QChar& ch, int base)
 {
     switch (base) {
@@ -4552,6 +4787,21 @@ void Evaluator::initializeBuiltInVariables()
     setVariable(QLatin1String("pi"), DMath::pi(), Variable::BuiltIn);
     setVariable(QString::fromUtf8("π"), DMath::pi(), Variable::BuiltIn);
 
+    Quantity steelDensity = HNumber("0.283") * Units::pound() / Units::cubic_inch();
+    steelDensity.setDisplayUnit((Units::pound() / Units::cubic_inch()).numericValue(),
+                                QStringLiteral("pound/cubic_inch"));
+    setVariable(QLatin1String("steel_density"), steelDensity, Variable::BuiltIn);
+
+    Quantity aluminum6061Density = HNumber("0.0975") * Units::pound() / Units::cubic_inch();
+    aluminum6061Density.setDisplayUnit((Units::pound() / Units::cubic_inch()).numericValue(),
+                                       QStringLiteral("pound/cubic_inch"));
+    setVariable(QLatin1String("alu_density"), aluminum6061Density, Variable::BuiltIn);
+
+    Quantity stainless304Density = HNumber("0.289") * Units::pound() / Units::cubic_inch();
+    stainless304Density.setDisplayUnit((Units::pound() / Units::cubic_inch()).numericValue(),
+                                       QStringLiteral("pound/cubic_inch"));
+    setVariable(QLatin1String("ss_density"), stainless304Density, Variable::BuiltIn);
+
     if (Settings::instance()->complexNumbers) {
         setVariable(QLatin1String("i"), DMath::i(), Variable::BuiltIn);
         setVariable(QLatin1String("j"), DMath::i(), Variable::BuiltIn);
@@ -4573,7 +4823,7 @@ void Evaluator::initializeAngleUnits()
 
 void Evaluator::setExpression(const QString& expr)
 {
-    m_expression = expr;
+    m_expression = s_rewriteImperialLengthInput(expr);
     m_dirty = true;
     m_valid = false;
     m_error = QString();

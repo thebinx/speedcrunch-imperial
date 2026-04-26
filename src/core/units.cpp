@@ -780,6 +780,15 @@ struct UnitRegistry {
     QHash<QMap<UnitQuantity, Rational>, Unit> canonicalMatchLookup;
 };
 
+size_t qHash(const QMap<UnitQuantity, Rational>& value, size_t seed = 0) noexcept
+{
+    for (auto it = value.constBegin(); it != value.constEnd(); ++it) {
+        seed = ::qHash(static_cast<int>(it.key()), seed);
+        seed = ::qHash(it.value(), seed);
+    }
+    return seed;
+}
+
 // Returns the stable textual key for a base dimension quantity.
 // Used by formatting/parsing fallback paths for unnamed dimensions.
 QString unitQuantityDimensionKey(UnitQuantity quantity)
@@ -2017,6 +2026,8 @@ QHash<QString, Quantity> Units::builtInUnitLookup(char angleMode)
     insertDisplayed(UnitSymbol::Ohm, unitValue(UnitId::Ohm), unitName(UnitId::Ohm));
     insertDisplayed(UnitSymbol::Second, unitValue(UnitId::Second), unitName(UnitId::Second));
     insertDisplayed(UnitSymbol::Hour, unitValue(UnitId::Hour), UnitSymbol::Hour);
+    insertDisplayed(QStringLiteral("imperial_length"), unitValue(UnitId::Inch),
+                    QStringLiteral("imperial_length"));
     const auto insertAffineDisplayAliases = [&](UnitId id) {
         const auto specIt = s_unitSpecs().constFind(id);
         if (specIt == s_unitSpecs().constEnd())

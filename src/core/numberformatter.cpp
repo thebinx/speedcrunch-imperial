@@ -29,6 +29,7 @@
 #include "core/units.h"
 
 #include <algorithm>
+#include <cmath>
 
 
 static const QChar g_dotChar = MathDsl::MulDotOp;
@@ -213,6 +214,51 @@ QString formatRationalDisplay(Quantity q)
     const QString unitName = q.unitName();
     if (!unitName.isEmpty())
         result += QStringLiteral("[%1]").arg(unitName);
+    return result;
+}
+
+QString formatImperialLengthDisplay(Quantity q)
+{
+    if (q.unitName() != QLatin1String("imperial_length"))
+        return QString();
+
+    CNumber number = q.numericValue();
+    number /= q.unit();
+    if (!number.isNearReal())
+        return QString();
+
+    const QString inchesText = HMath::format(number.real, HNumber::Format::Fixed());
+    bool ok = false;
+    const double inchesDouble = inchesText.toDouble(&ok);
+    if (!ok || !std::isfinite(inchesDouble))
+        return QString();
+
+    const bool negative = inchesDouble < 0;
+    qint64 totalSixtyFourths = static_cast<qint64>(std::llround(std::fabs(inchesDouble) * 64.0));
+    qint64 feet = totalSixtyFourths / (12 * 64);
+    qint64 inchSixtyFourths = totalSixtyFourths % (12 * 64);
+    qint64 inches = inchSixtyFourths / 64;
+    qint64 numerator = inchSixtyFourths % 64;
+    qint64 denominator = 64;
+
+    while (numerator != 0 && numerator % 2 == 0) {
+        numerator /= 2;
+        denominator /= 2;
+    }
+
+    QString inchText;
+    if (inches != 0 || numerator == 0)
+        inchText = QString::number(inches);
+    if (numerator != 0) {
+        if (!inchText.isEmpty())
+            inchText += QLatin1Char(' ');
+        inchText += QStringLiteral("%1/%2").arg(numerator).arg(denominator);
+    }
+
+    QString result;
+    if (negative)
+        result += MathDsl::SubOpAl1;
+    result += QStringLiteral("%1'-%2\"").arg(feet).arg(inchText);
     return result;
 }
 
@@ -465,6 +511,9 @@ QString NumberFormatter::format(Quantity q, char resultFormatOverride,
     const char activeResultFormat = resultFormatOverride == '\0' ? settings->resultFormat : resultFormatOverride;
     QString result;
 
+    result = formatImperialLengthDisplay(q);
+    const bool formattedImperialLength = !result.isEmpty();
+
     Quantity::Format format = q.format();
     // Check per-expression rational-display override encoded in format precision.
     const bool forceRationalDisplay = format.precision == ForcedRationalPrecision;
@@ -598,7 +647,7 @@ QString NumberFormatter::format(Quantity q, char resultFormatOverride,
     if (settings->decimalSeparator() == MathDsl::CommaSep.toLatin1())
         result.replace(MathDsl::DotSep, MathDsl::CommaSep);
 
-    if (q.hasUnit() || !q.isDimensionless()) {
+    if (!formattedImperialLength && (q.hasUnit() || !q.isDimensionless())) {
         bool unitNormalized = false;
         const int openBracket = result.lastIndexOf(MathDsl::UnitStart);
         const int closeBracket = result.lastIndexOf(MathDsl::UnitEnd);

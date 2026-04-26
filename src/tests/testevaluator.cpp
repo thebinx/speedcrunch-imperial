@@ -1358,6 +1358,24 @@ void test_units()
     }
 }
 
+void test_imperial_length_literals()
+{
+    CHECK_EVAL_FORMAT("75'2\" + 32'", "107'-2\"");
+    CHECK_EVAL_FORMAT("32'0\"+123.34", "42'-3 11/32\"");
+    CHECK_EVAL_FORMAT("124.375\"", "10'-4 3/8\"");
+    CHECK_EVAL_FORMAT("32'-1\"", "32'-1\"");
+    CHECK_EVAL_FORMAT("32'-1 3/4\"", "32'-1 3/4\"");
+    CHECK_EVAL_FORMAT("32'-0.75\"", "32'-3/4\"");
+    CHECK_EVAL_FORMAT("32'0.875\"", "32'-7/8\"");
+}
+
+void test_material_density_variables()
+{
+    CHECK_EVAL_FORMAT("steel_density", u8"0.283[lb/in³]");
+    CHECK_EVAL_FORMAT("alu_density", u8"0.0975[lb/in³]");
+    CHECK_EVAL_FORMAT("ss_density", u8"0.289[lb/in³]");
+}
+
 void test_percent_operator()
 {
     CHECK_EVAL("50%", "0.5");
@@ -7833,6 +7851,8 @@ int main(int argc, char* argv[])
     test_unary();
     test_binary();
     test_units();
+    test_imperial_length_literals();
+    test_material_density_variables();
     test_percent_operator();
     test_bitwise_complement_operator();
 
