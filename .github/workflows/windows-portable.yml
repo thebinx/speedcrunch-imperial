@@ -26,7 +26,6 @@ jobs:
         with:
           version: "6.6.3"
           arch: "win64_msvc2019_64"
-          modules: "qttools"
           cache: true
 
       - name: Configure
